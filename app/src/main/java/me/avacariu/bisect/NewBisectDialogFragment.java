@@ -3,20 +3,19 @@ package me.avacariu.bisect;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
+import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.Window;
 import android.widget.EditText;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.TextView;
 
 
 public class NewBisectDialogFragment extends DialogFragment {
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -38,11 +37,12 @@ public class NewBisectDialogFragment extends DialogFragment {
 
         Dialog dialog = builder.create();
 
+        final DbHelper mDbHelper = new DbHelper(getActivity());
+
         final EditText nameField = (EditText) view.findViewById(R.id.dialog_name);
         final EditText startField = (EditText) view.findViewById(R.id.dialog_start);
         final EditText endField = (EditText) view.findViewById(R.id.dialog_end);
         final RadioButton bisectRadio = (RadioButton) view.findViewById(R.id.dialog_bisect);
-        final RadioButton binSearchRadio = (RadioButton) view.findViewById(R.id.dialog_binsearch);
 
         dialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
@@ -74,7 +74,26 @@ public class NewBisectDialogFragment extends DialogFragment {
                         }
 
                         if (emptyFields == 0) {
-                            // TODO save info here
+                            // Gets the data repository in write mode
+                            SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+                            ContentValues values = new ContentValues();
+                            values.put(DbContract.DbEntry.COLUMN_NAME_NAME, nameField.getText().toString());
+                            values.put(DbContract.DbEntry.COLUMN_NAME_START, Integer.parseInt(startField.getText().toString()));
+                            values.put(DbContract.DbEntry.COLUMN_NAME_END, Integer.parseInt(endField.getText().toString()));
+
+                            String type;
+                            if (bisectRadio.isChecked()) {
+                                type = DbContract.DbEntry.COLUMN_TYPE_BISECT;
+                            } else {
+                                type = DbContract.DbEntry.COLUMN_TYPE_BIN_SEARCH;
+                            }
+
+                            values.put(DbContract.DbEntry.COLUMN_NAME_TYPE, type);
+
+                            long newRowId;
+                            newRowId = db.insert(DbContract.DbEntry.TABLE_NAME, null, values);
+
                             d.dismiss();
                         }
                         // else dialog stays open
